@@ -1,7 +1,6 @@
 import { Component } from 'react';
 import { Searchbar } from 'components/Searchbar';
 import { ImageGallery } from 'components/ImageGallery';
-import { ImageGalleryItem } from 'components/ImageGalleryItem';
 import { Button } from 'components/Button';
 import { Modal } from 'components/Modal';
 import { Loader } from 'components/Loader/Loader';
@@ -18,13 +17,15 @@ export class App extends Component {
     showModal: false,
     isLoading: false,
     noMoreImages: false,
-    total: '',
     largeImageURL: '',
   };
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.query !== this.state.query) {
-      this.setState({ page: 1, images: [] }, this.fetchImages);
+    if (
+      this.state.page !== prevState.page ||
+      this.state.query !== prevState.query
+    ) {
+      this.fetchImages();
     }
   }
 
@@ -43,7 +44,6 @@ export class App extends Component {
         } else {
           this.setState(prevState => ({
             images: [...prevState.images, ...data.hits],
-            page: prevState.page + 1,
             noMoreImages: false,
           }));
         }
@@ -64,7 +64,7 @@ export class App extends Component {
   };
 
   handleSearchSubmit = query => {
-    this.setState({ query });
+    this.setState({ query, page: 1, images: [] });
   };
 
   handleImageClick = largeImageURL => {
@@ -75,6 +75,10 @@ export class App extends Component {
     this.setState({ showModal: false });
   };
 
+  onLoadMore = () => {
+    this.setState(prevState => ({ page: prevState.page + 1 }));
+  };
+
   render() {
     const { images, isLoading, showModal, noMoreImages, largeImageURL } =
       this.state;
@@ -82,19 +86,10 @@ export class App extends Component {
     return (
       <div className="App">
         <Searchbar onSubmit={this.handleSearchSubmit} />
-        <ImageGallery>
-          {images.map(image => (
-            <ImageGalleryItem
-              key={image.id}
-              src={image.webformatURL}
-              alt={image.id}
-              onClick={this.handleImageClick}
-            />
-          ))}
-        </ImageGallery>
+        <ImageGallery images={images} onClick={this.handleImageClick} />
         {isLoading && <Loader />}
         {images.length > 0 && !isLoading && !noMoreImages && (
-          <Button onClick={this.fetchImages} isVisible={true} />
+          <Button onClick={this.onLoadMore} isVisible={true} />
         )}
         {showModal && (
           <Modal
